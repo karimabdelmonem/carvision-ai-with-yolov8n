@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     # App
     APP_NAME: str = "CarScan API"
     DEBUG: bool = False
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
 
     # Supabase
     SUPABASE_URL: str
@@ -27,10 +29,10 @@ class Settings(BaseSettings):
 
     # إعدادات Pydantic
     model_config = SettingsConfigDict(
-        env_file=".env",       
+        env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore",       
-        case_sensitive=True,  
+        extra="ignore",
+        case_sensitive=True,
     )
 
 

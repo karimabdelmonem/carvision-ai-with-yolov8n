@@ -4,13 +4,15 @@
 الفكرة:
     - ننشئ FastAPI app
     - نضيف CORS
-    - نضم كل الـ routers (حاليًا scan بس)
+    - نضم كل الـ routers (scan + scans)
     - نضيف endpoints بسيطة للتأكد إن السيرفر شغال
+    - نقدّم الفرونت إند من مجلد static
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
 from app.config import settings
 from app.routes.scan import router as scan_router
 from app.routes.scans import router as scans_router
@@ -29,7 +31,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],          
+    allow_origins=["*"],           # لأن الفرونت إند على نفس الـ origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,6 +42,7 @@ app.add_middleware(
 
 app.include_router(scan_router)
 app.include_router(scans_router)
+
 
 # 4) Endpoints بسيطة
 
@@ -56,7 +59,8 @@ async def root():
 async def health():
     return {"status": "ok"}
 
-# 6) تقديم الفرونت إند (Static Files)
+
+# 5) تقديم الفرونت إند (Static Files)
 
 app.mount(
     "/app",
@@ -65,7 +69,8 @@ app.mount(
 )
 
 
-# لو حبيت تشغّل بـ `python -m app.main` بدل uvicorn
+# 6) تشغيل مباشر (اختياري - للتطوير المحلي)
+# على Render بنستخدم uvicorn مباشرة عبر render.yaml
 
 if __name__ == "__main__":
     import uvicorn
