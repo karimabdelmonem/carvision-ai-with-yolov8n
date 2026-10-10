@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CarScan - الإحصائيات</title>
+  <link rel="stylesheet" href="/app/css/style.css" />
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="header-top">
+        <div>
+          <h1>📊 الإحصائيات</h1>
+          <div class="subtitle">نظرة عامة على كل الفحوصات</div>
+        </div>
+        <nav>
+          <a href="/app/">الفحص</a>
+          <a href="/app/history.html">السجل</a>
+          <a href="/app/stats.html" class="active">الإحصائيات</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <div class="error" id="error"></div>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>جاري التحميل...</div>
+      </div>
+
+      <div id="statsContent"></div>
+
+    </div>
+  </div>
+
+  <script src="/app/js/common.js"></script>
+  <script src="/app/js/stats.js"></script>
+</body>
+</html>

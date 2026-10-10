@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CarScan - سجل الفحوصات</title>
+  <link rel="stylesheet" href="/app/css/style.css" />
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="header-top">
+        <div>
+          <h1>📋 سجل الفحوصات</h1>
+          <div class="subtitle">كل الفحوصات اللي عملتها</div>
+        </div>
+        <nav>
+          <a href="/app/">الفحص</a>
+          <a href="/app/history.html" class="active">السجل</a>
+          <a href="/app/stats.html">الإحصائيات</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- Error -->
+      <div class="error" id="error"></div>
+
+      <!-- Loading -->
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>جاري التحميل...</div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty" id="empty" style="display:none;">
+        <div class="icon">📭</div>
+        <div>لسه مفيش فحوصات</div>
+        <a href="/app/" class="btn btn-primary" style="margin-top:15px; display:inline-block;">
+          ابدأ أول فحص
+        </a>
+      </div>
+
+      <!-- List -->
+      <div class="history-list" id="historyList"></div>
+
+      <!-- Pagination -->
+      <div class="pagination" id="pagination" style="display:none;">
+        <button class="btn btn-secondary" id="prevBtn">← السابق</button>
+        <span class="page-info" id="pageInfo"></span>
+        <button class="btn btn-secondary" id="nextBtn">التالي →</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== Details Modal ===== -->
+  <div class="modal" id="detailsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">تفاصيل الفحص</h3>
+        <button class="modal-close" id="closeModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="preview-wrap">
+          <img id="modalImage" alt="scan" />
+          <canvas id="modalCanvas"></canvas>
+        </div>
+        <div id="detailsBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Confirm Delete Modal ===== -->
+  <div class="modal" id="confirmModal">
+    <div class="modal-content" style="max-width:400px;">
+      <div class="modal-header">
+        <h3>تأكيد الحذف</h3>
+      </div>
+      <div class="modal-body">
+        <p id="confirmText" style="margin-bottom:15px;"></p>
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="cancelDeleteBtn">إلغاء</button>
+          <button class="btn btn-danger" id="confirmDeleteBtn">حذف</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app/js/common.js"></script>
+  <script src="/app/js/history.js"></script>
+</body>
+</html>

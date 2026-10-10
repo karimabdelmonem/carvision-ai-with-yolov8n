@@ -1,0 +1,67 @@
+# Python
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.Python
+
+# Virtual environments
+
+.venv/
+venv/
+env/
+
+# Environment variables (secrets - NEVER commit!)
+
+.env
+.env.local
+.env.*.local
+
+# Model weights
+
+# نتجاهل كل ملفات .pt
+*.pt
+*.onnx
+*.pth
+*.weights
+# لكن نسمح بـ best.pt (الموديل المدرب بتاعنا)
+!models/best.pt
+# ونتجاهل باقي محتوى models/ (زي yolov8n.pt المؤقت)
+models/*
+!models/best.pt
+!models/.gitkeep
+
+# Datasets & training runs
+
+data/
+datasets/
+runs/
+
+# Jupyter
+
+.ipynb_checkpoints/
+
+# IDE / Editor
+
+.idea/
+.vscode/
+*.swp
+
+# OS files
+
+.DS_Store
+Thumbs.db
+
+# Testing
+
+.pytest_cache/
+.coverage
+htmlcov/
+
+
+# Logs
+
+*.log
+logs/

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CarScan - فحص أضرار العربية</title>
+  <link rel="stylesheet" href="/app/css/style.css" />
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- ===== Header + Nav ===== -->
+    <header>
+      <div class="header-top">
+        <div>
+          <h1>🚗 CarScan</h1>
+          <div class="subtitle">افحص عربيتك بالذكاء الاصطناعي</div>
+        </div>
+        <nav>
+          <a href="/app/" class="active">الفحص</a>
+          <a href="/app/history.html">السجل</a>
+          <a href="/app/stats.html">الإحصائيات</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ===== Upload Zone ===== -->
+      <div class="upload-zone" id="uploadZone">
+        <div id="uploadPrompt">
+          <div class="icon">📸</div>
+          <div class="text">اضغط هنا أو اسحب صورة العربية</div>
+          <div class="hint">jpg, png, webp</div>
+        </div>
+
+        <div class="preview-wrap" id="previewWrap" style="display:none;">
+          <img id="preview" alt="preview" />
+          <canvas id="bboxCanvas"></canvas>
+        </div>
+      </div>
+
+      <input type="file" id="fileInput" accept="image/*" />
+            <!-- ===== Camera Method Button ===== -->
+      <div class="btn-row" id="inputMethods">
+        <button class="btn btn-secondary" id="cameraBtn" type="button">
+          📷 أو صوّر بالكاميرا
+        </button>
+      </div>
+
+      <!-- ===== Camera Live View ===== -->
+      <div class="camera-section" id="cameraSection" style="display:none;">
+        <video id="cameraVideo" autoplay playsinline></video>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="captureBtn" type="button">
+            📸 التقط الصورة
+          </button>
+          <button class="btn btn-secondary" id="closeCameraBtn" type="button">
+            ✕ إلغاء
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== Buttons ===== -->
+      <div class="btn-row">
+        <button class="btn btn-primary" id="analyzeBtn" disabled>
+          🔍 افحص الصورة
+        </button>
+        <button class="btn btn-secondary" id="resetBtn" style="display:none;">
+          🔄 ابدأ من جديد
+        </button>
+      </div>
+
+      <!-- ===== Progress Bar ===== -->
+      <div class="progress" id="progress">
+        <div class="progress-bar" id="progressBar">0%</div>
+      </div>
+
+      <!-- ===== Error ===== -->
+      <div class="error" id="error"></div>
+
+      <!-- ===== Results ===== -->
+      <div class="results" id="results">
+        <h2>نتيجة الفحص</h2>
+
+        <!-- Image with bbox -->
+        <div class="preview-wrap" id="resultImageWrap">
+          <img id="resultImage" alt="result" />
+          <canvas id="resultCanvas"></canvas>
+        </div>
+
+        <!-- Summary / Detections -->
+        <div id="resultBody"></div>
+
+        <!-- Actions -->
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="downloadBtn">
+            ⬇️ حمّل النتيجة JSON
+          </button>
+          <a class="btn btn-secondary" id="viewDetailsBtn" href="#">
+            🔎 تفاصيل الفحص
+          </a>
+        </div>
+
+        <div class="meta" id="resultMeta"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== Shared helpers ===== -->
+  <script src="/app/js/common.js"></script>
+
+  <!-- ===== Page logic ===== -->
+  <script>
+    // ==================== العناصر ====================
+    const uploadZone   = document.getElementById("uploadZone");
+    const fileInput    = document.getElementById("fileInput");
+    const uploadPrompt = document.getElementById("uploadPrompt");
+    const previewWrap  = document.getElementById("previewWrap");
+    const preview      = document.getElementById("preview");
+    const bboxCanvas   = document.getElementById("bboxCanvas");
+
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const resetBtn   = document.getElementById("resetBtn");
+
+    const progress    = document.getElementById("progress");
+    const progressBar = document.getElementById("progressBar");
+    const errorBox    = document.getElementById("error");
+
+    const results         = document.getElementById("results");
+    const resultImage     = document.getElementById("resultImage");
+    const resultCanvas    = document.getElementById("resultCanvas");
+    const resultBody      = document.getElementById("resultBody");
+    const resultMeta      = document.getElementById("resultMeta");
+    const downloadBtn     = document.getElementById("downloadBtn");
+    const viewDetailsBtn  = document.getElementById("viewDetailsBtn");
+
+    // ==================== State ====================
+    let selectedFile  = null;
+    let lastResult    = null;   // نتيجة آخر فحص (للـ download)
+
+    // ==================== Upload: click ====================
+    uploadZone.addEventListener("click", (e) => {
+      // لو المستخدم ضغط على الـ preview نفسه ما نفتحش الـ file dialog
+      if (e.target.tagName === "IMG" || e.target.tagName === "CANVAS") return;
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) handleFile(file);
+    });
+
+    // ==================== Upload: drag & drop ====================
+    ["dragenter", "dragover"].forEach((ev) => {
+      uploadZone.addEventListener(ev, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        uploadZone.classList.add("dragover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((ev) => {
+      uploadZone.addEventListener(ev, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        uploadZone.classList.remove("dragover");
+      });
+    });
+
+    uploadZone.addEventListener("drop", (e) => {
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith("image/")) {
+        handleFile(file);
+      } else {
+        showError("لازم تسحب صورة (jpg, png, webp)");
+      }
+    });
+
+    // ==================== Handle selected file ====================
+    function handleFile(file) {
+      selectedFile = file;
+      lastResult = null;
+
+      // Reset UI
+      errorBox.classList.remove("active");
+      results.classList.remove("active");
+      progress.classList.remove("active");
+      resetBtn.style.display = "none";
+      inputMethods.style.display = "none";
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        preview.src = ev.target.result;
+        previewWrap.style.display = "inline-block";
+        uploadPrompt.style.display = "none";
+        uploadZone.classList.add("has-image");
+        analyzeBtn.disabled = false;
+        analyzeBtn.textContent = "🔍 افحص الصورة";
+
+        // Clear canvas
+        clearCanvas(bboxCanvas, preview);
+
+        // Once image is loaded, we can position the canvas correctly
+        preview.onload = () => {
+          resizeCanvasToImage(bboxCanvas, preview);
+        };
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ==================== Analyze ====================
+    analyzeBtn.addEventListener("click", () => {
+      if (!selectedFile) return;
+
+      errorBox.classList.remove("active");
+      results.classList.remove("active");
+      analyzeBtn.disabled = true;
+      progress.classList.add("active");
+      setProgress(0);
+
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      // Use XHR to get upload progress
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/scan");
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          // upload is ~70% of the total time, remaining 30% is inference
+          setProgress(Math.round(pct * 0.7));
+        }
+      });
+
+      xhr.addEventListener("load", () => {
+        progress.classList.remove("active");
+        analyzeBtn.disabled = false;
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            setProgress(100);
+            showResults(data);
+          } catch (err) {
+            showError("رد غير صالح من السيرفر");
+          }
+        } else {
+          let detail = `خطأ في السيرفر (${xhr.status})`;
+          try {
+            const err = JSON.parse(xhr.responseText);
+            if (err.detail) detail = err.detail;
+          } catch {}
+          showError(detail);
+        }
+      });
+
+      xhr.addEventListener("error", () => {
+        progress.classList.remove("active");
+        analyzeBtn.disabled = false;
+        showError("فشل الاتصال بالسيرفر");
+      });
+
+      xhr.send(formData);
+    });
+
+    // ==================== Reset ====================
+    resetBtn.addEventListener("click", () => {
+      selectedFile = null;
+      lastResult = null;
+      fileInput.value = "";
+
+        stopCamera();
+        inputMethods.style.display = "flex";
+
+      // Reset upload
+      uploadZone.classList.remove("has-image");
+      uploadPrompt.style.display = "block";
+      previewWrap.style.display = "none";
+      preview.src = "";
+      clearCanvas(bboxCanvas, preview);
+
+      // Reset UI
+      results.classList.remove("active");
+      errorBox.classList.remove("active");
+      progress.classList.remove("active");
+      resetBtn.style.display = "none";
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = "🔍 افحص الصورة";
+    });
+
+    // ==================== Show Results ====================
+    function showResults(data) {
+      lastResult = data;
+
+      // 1. Show result image
+      resultImage.src = data.image_url;
+
+      // 2. Draw bounding boxes after image loads
+      resultImage.onload = () => {
+        resizeCanvasToImage(resultCanvas, resultImage);
+        drawBoundingBoxes(resultImage, resultCanvas, data.detections);
+      };
+
+      // 3. Build summary HTML
+      if (data.damage_count === 0) {
+        resultBody.innerHTML = `
+          <div class="clean-message">
+            ✅ العربية نضيفة! مفيش أضرار مكتشفة.
+          </div>
+        `;
+      } else {
+        let html = `<div class="summary-grid">`;
+        for (const [name, count] of Object.entries(data.summary)) {
+          html += `
+            <div class="summary-card">
+              <div class="name">${escapeHtml(name)}</div>
+              <div class="count">${count}</div>
+            </div>
+          `;
+        }
+        html += `</div>`;
+
+        // Detection details list
+        html += `<div class="detection-list">`;
+        data.detections.forEach((d) => {
+          const color = getDamageColor(d.class_name);
+          html += `
+            <div class="detection-item">
+              <span>${escapeHtml(d.class_name_ar)}</span>
+              <span class="badge" style="background:${color};">
+                ${(d.confidence * 100).toFixed(0)}%
+              </span>
+            </div>
+          `;
+        });
+        html += `</div>`;
+
+        html += `<p style="margin-top:15px;font-weight:bold;">
+          إجمالي الأضرار: ${data.damage_count}
+        </p>`;
+
+        resultBody.innerHTML = html;
+      }
+
+      // 4. Meta
+      resultMeta.textContent =
+        `رقم الفحص: ${shortId(data.scan_id)} | ${formatDate(data.created_at)}`;
+
+      // 5. Details link
+      viewDetailsBtn.href = `/app/history.html?id=${data.scan_id}`;
+
+      // 6. Show reset button
+      resetBtn.style.display = "inline-block";
+      analyzeBtn.textContent = "🔍 افحص صورة تانية";
+
+      // 7. Show results
+      results.classList.add("active");
+
+      // 8. Scroll into view
+      setTimeout(() => results.scrollIntoView({ behavior: "smooth" }), 100);
+    }
+
+    // ==================== Download JSON ====================
+    downloadBtn.addEventListener("click", () => {
+      if (!lastResult) return;
+      downloadJson(lastResult, `carscan-${shortId(lastResult.scan_id)}.json`);
+    });
+
+    // ==================== Helpers ====================
+    function showError(msg) {
+      errorBox.textContent = "❌ " + msg;
+      errorBox.classList.add("active");
+    }
+
+    function setProgress(pct) {
+      progressBar.style.width = pct + "%";
+      progressBar.textContent = pct + "%";
+    }
+
+    // ==================== Canvas resize helper ====================
+    // Resize canvas to match displayed image size
+    function resizeCanvasToImage(canvas, img) {
+      const rect = img.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+
+      canvas.width  = rect.width  * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width  = rect.width  + "px";
+      canvas.style.height = rect.height + "px";
+
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function clearCanvas(canvas, img) {
+      if (!img || !img.getBoundingClientRect) {
+        canvas.width = 0; canvas.height = 0;
+        return;
+      }
+      const rect = img.getBoundingClientRect();
+      canvas.width  = rect.width  || 0;
+      canvas.height = rect.height || 0;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // ==================== Camera ====================
+const cameraBtn      = document.getElementById("cameraBtn");
+const cameraSection  = document.getElementById("cameraSection");
+const cameraVideo    = document.getElementById("cameraVideo");
+const captureBtn     = document.getElementById("captureBtn");
+const closeCameraBtn = document.getElementById("closeCameraBtn");
+const inputMethods   = document.getElementById("inputMethods");
+
+let cameraStream = null;
+
+// فتح الكاميرا
+cameraBtn.addEventListener("click", async () => {
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },   // كاميرا خلفية على الموبايل
+      audio: false,
+    });
+
+    cameraVideo.srcObject = cameraStream;
+    cameraSection.style.display = "block";
+    inputMethods.style.display = "none";
+    uploadZone.style.display = "none";
+    analyzeBtn.disabled = true;
+    errorBox.classList.remove("active");
+  } catch (err) {
+    showError("مش قادر أفتح الكاميرا: " + err.message);
+  }
+});
+
+// التقاط صورة من الفيديو
+captureBtn.addEventListener("click", () => {
+  if (!cameraVideo.videoWidth) return;
+
+  const canvas = document.createElement("canvas");
+  canvas.width  = cameraVideo.videoWidth;
+  canvas.height = cameraVideo.videoHeight;
+  canvas.getContext("2d").drawImage(cameraVideo, 0, 0);
+
+  canvas.toBlob(
+    (blob) => {
+      if (!blob) return;
+      const file = new File(
+        [blob],
+        `camera-${Date.now()}.jpg`,
+        { type: "image/jpeg" }
+      );
+
+      stopCamera();
+      uploadZone.style.display = "";
+
+      // نستخدم نفس دالة handleFile - كأنها صورة من الملفات
+      handleFile(file);
+    },
+    "image/jpeg",
+    0.92
+  );
+});
+
+// إغلاق الكاميرا بدون التقاط
+closeCameraBtn.addEventListener("click", () => {
+  stopCamera();
+  uploadZone.style.display = "";
+  inputMethods.style.display = "flex";
+});
+
+// إغلاق الكاميرا + تنظيف
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach((t) => t.stop());
+    cameraStream = null;
+  }
+  cameraVideo.srcObject = null;
+  cameraSection.style.display = "none";
+}
+  </script>
+</body>
+</html>
