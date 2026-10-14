@@ -1,4 +1,4 @@
-# 🚗 CarScan — AI Car Damage Detection
+# CarScan — AI Car Damage Detection
 
 Detect car damages from a single image using **YOLOv8** + **FastAPI**.
 
@@ -6,17 +6,25 @@ Detect car damages from a single image using **YOLOv8** + **FastAPI**.
 
 ---
 
-## ✨ Features
+## 🌐Live Demo
 
-- 🎯 YOLOv8 model trained on 6 damage classes (**91% accuracy**)
-- 🖼️ Three input methods: **upload**, **drag & drop**, **camera**
-- 📦 Results saved to **Supabase** (Storage + Postgres)
-- 📊 History and statistics pages
-- ⚡ FastAPI backend + vanilla JS frontend (no framework needed)
+**Try it now:** [https://carvision-ai-with-yolov8n-production.up.railway.app/app/](https://carvision-ai-with-yolov8n-production.up.railway.app/app/)
+
+> First request may take 30–60 seconds (cold start).
 
 ---
 
-## 🛠 Tech Stack
+## Features
+
+- YOLOv8 model trained on 6 damage classes (**91% accuracy**)
+- Three input methods: **upload**, **drag & drop**, **camera**
+- Results saved to **Supabase** (Storage + Postgres)
+- History and statistics pages
+- FastAPI backend + vanilla JS frontend (no framework needed)
+
+---
+
+## Tech Stack
 
 | Layer | Tech |
 |---|---|
@@ -25,9 +33,10 @@ Detect car damages from a single image using **YOLOv8** + **FastAPI**.
 | Database | Supabase (Storage + Postgres) |
 | Image | OpenCV |
 | Frontend | HTML · CSS · Vanilla JS |
+| Hosting | Railway (Docker) |
 
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -104,7 +113,7 @@ Open **http://127.0.0.1:8000/app/** in your browser.
 
 ---
 
-## 🔌 API Endpoints
+## API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -119,7 +128,7 @@ Open **http://127.0.0.1:8000/app/** in your browser.
 
 ---
 
-## 🧠 Model
+## Model
 
 | Property | Value |
 |---|---|
@@ -130,3 +139,19 @@ Open **http://127.0.0.1:8000/app/** in your browser.
 | Accuracy | 91% on 22 test images |
 | Weights | `models/best.pt` (6.25 MB) |
 
+---
+
+## Docker
+
+```bash
+docker build -t carscan-ai .
+docker run -p 7860:7860 --env-file .env carscan-ai
+```
+
+Open **http://127.0.0.1:7860/app/**.
+
+---
+
+## License
+
+MIT
